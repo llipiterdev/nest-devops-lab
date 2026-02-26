@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Task } from './entities/task.interface';
+import { TaskPriority } from './entities/task-priority.enum';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { randomUUID } from 'crypto';
@@ -11,16 +12,23 @@ export class TasksService {
   create(createTaskDto: CreateTaskDto): Task {
     const task: Task = {
       id: randomUUID(),
-      title: createTaskDto.title,
+      title: createTaskDto.title.trim(),
       completed: createTaskDto.completed ?? false,
       createdAt: new Date(),
+      priority: createTaskDto.priority ?? TaskPriority.MEDIUM,
+      dueDate: createTaskDto.dueDate
+        ? new Date(createTaskDto.dueDate)
+        : undefined,
     };
     this.tasks.push(task);
     return task;
   }
 
-  findAll(): Task[] {
-    return [...this.tasks];
+  findAll(completed?: boolean): Task[] {
+    if (completed === undefined) {
+      return [...this.tasks];
+    }
+    return this.tasks.filter((t) => t.completed === completed);
   }
 
   findOne(id: string): Task {
@@ -37,10 +45,16 @@ export class TasksService {
       throw new NotFoundException(`Tarea con id "${id}" no encontrada`);
     }
     if (updateTaskDto.title !== undefined) {
-      this.tasks[index].title = updateTaskDto.title;
+      this.tasks[index].title = updateTaskDto.title.trim();
     }
     if (updateTaskDto.completed !== undefined) {
       this.tasks[index].completed = updateTaskDto.completed;
+    }
+    if (updateTaskDto.priority !== undefined) {
+      this.tasks[index].priority = updateTaskDto.priority;
+    }
+    if (updateTaskDto.dueDate !== undefined) {
+      this.tasks[index].dueDate = new Date(updateTaskDto.dueDate);
     }
     return this.tasks[index];
   }
@@ -55,5 +69,13 @@ export class TasksService {
 
   findAllCompleted(): Task[] {
     return this.tasks.filter((t) => t.completed);
+  }
+
+  findAllPending(): Task[] {
+    return this.tasks.filter((t) => !t.completed);
+  }
+
+  findByPriority(priority: TaskPriority): Task[] {
+    return this.tasks.filter((t) => t.priority === priority);
   }
 }

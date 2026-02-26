@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
@@ -14,6 +14,14 @@ describe('TasksController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    );
     await app.init();
   });
 
@@ -41,6 +49,7 @@ describe('TasksController (e2e)', () => {
     expect(created.id).toBeDefined();
     expect(created.title).toBe('Tarea e2e');
     expect(created.completed).toBe(false);
+    expect(created.priority).toBeDefined();
 
     const listRes = await request(app.getHttpServer())
       .get('/tasks')
@@ -96,5 +105,64 @@ describe('TasksController (e2e)', () => {
     expect(completed).toHaveLength(1);
     expect(completed[0].title).toBe('B');
     expect(completed[0].completed).toBe(true);
+  });
+
+  it('POST /tasks con título vacío devuelve 400 por validación', () => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: '' })
+      .expect(400);
+  });
+
+  it('POST /tasks con prioridad inválida devuelve 400', () => {
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Ok', priority: 'invalid' })
+      .expect(400);
+  });
+
+  it('GET /tasks/pending devuelve solo pendientes', async () => {
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Pendiente', completed: false });
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Hecha', completed: true });
+
+    const res = await request(app.getHttpServer())
+      .get('/tasks/pending')
+      .expect(200);
+    const pending = res.body as Task[];
+    expect(pending).toHaveLength(1);
+    expect(pending[0].title).toBe('Pendiente');
+  });
+
+  it('GET /tasks/priority/high devuelve solo tareas de prioridad high', async () => {
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Alta', priority: 'high' });
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Baja', priority: 'low' });
+
+    const res = await request(app.getHttpServer())
+      .get('/tasks/priority/high')
+      .expect(200);
+    const high = res.body as Task[];
+    expect(high).toHaveLength(1);
+    expect(high[0].priority).toBe('high');
+  });
+
+  it('GET /tasks?completed=false filtra pendientes', async () => {
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Solo pendiente', completed: false });
+
+    const res = await request(app.getHttpServer())
+      .get('/tasks?completed=false')
+      .expect(200);
+    const list = res.body as Task[];
+    expect(list).toHaveLength(1);
+    expect(list[0].completed).toBe(false);
   });
 });
