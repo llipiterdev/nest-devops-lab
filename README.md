@@ -10,14 +10,16 @@ API REST construida con [NestJS](https://nestjs.com/) y Node.js que expone un **
 
 - **App:** ruta raíz `GET /` (mensaje de bienvenida).
 - **Tasks (módulo):**
-  - `POST /tasks` — Crear tarea (body: `{ "title": string, "completed?": boolean }`).
-  - `GET /tasks` — Listar todas las tareas.
+  - `POST /tasks` — Crear tarea. Body: `{ "title": string (1-200 chars), "completed?": boolean, "priority?": "low"|"medium"|"high", "dueDate?": string (ISO 8601) }`. Validación con class-validator; título obligatorio.
+  - `GET /tasks` — Listar tareas. Query opcional: `?completed=true|false` para filtrar.
   - `GET /tasks/completed` — Listar solo tareas completadas.
+  - `GET /tasks/pending` — Listar solo tareas pendientes.
+  - `GET /tasks/priority/:level` — Listar por prioridad (`low`, `medium`, `high`).
   - `GET /tasks/:id` — Obtener una tarea por id.
-  - `PATCH /tasks/:id` — Actualizar tarea (body: `{ "title?", "completed?" }`).
+  - `PATCH /tasks/:id` — Actualizar tarea (mismos campos opcionales que create).
   - `DELETE /tasks/:id` — Eliminar tarea (204).
 
-Las tareas se almacenan en memoria (sin base de datos) para simplificar el laboratorio.
+Cada tarea tiene: `id`, `title`, `completed`, `createdAt`, `priority` (por defecto `medium`) y opcionalmente `dueDate`. Las tareas se almacenan en memoria (sin base de datos) para simplificar el laboratorio.
 
 ## Requisitos
 

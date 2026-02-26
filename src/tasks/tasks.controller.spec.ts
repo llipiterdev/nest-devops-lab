@@ -4,12 +4,14 @@ import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { Task } from './entities/task.interface';
+import { TaskPriority } from './entities/task-priority.enum';
 
 const mockTask: Task = {
   id: 'test-id',
   title: 'Test task',
   completed: false,
   createdAt: new Date(),
+  priority: TaskPriority.MEDIUM,
 };
 
 const mockService = {
@@ -19,6 +21,8 @@ const mockService = {
   update: jest.fn().mockReturnValue({ ...mockTask, title: 'Updated' }),
   remove: jest.fn(),
   findAllCompleted: jest.fn().mockReturnValue([]),
+  findAllPending: jest.fn().mockReturnValue([]),
+  findByPriority: jest.fn().mockReturnValue([]),
 };
 
 describe('TasksController', () => {
@@ -47,9 +51,14 @@ describe('TasksController', () => {
   });
 
   describe('findAll', () => {
-    it('debería devolver el array del servicio', () => {
+    it('debería devolver el array del servicio sin filtro', () => {
       expect(controller.findAll()).toEqual([mockTask]);
-      expect(mockService.findAll).toHaveBeenCalled();
+      expect(mockService.findAll).toHaveBeenCalledWith(undefined);
+    });
+
+    it('debería pasar completed=true al servicio', () => {
+      controller.findAll(true);
+      expect(mockService.findAll).toHaveBeenCalledWith(true);
     });
   });
 
@@ -81,6 +90,22 @@ describe('TasksController', () => {
     it('debería devolver las tareas completadas del servicio', () => {
       expect(controller.findAllCompleted()).toEqual([]);
       expect(mockService.findAllCompleted).toHaveBeenCalled();
+    });
+  });
+
+  describe('findAllPending', () => {
+    it('debería devolver las tareas pendientes del servicio', () => {
+      expect(controller.findAllPending()).toEqual([]);
+      expect(mockService.findAllPending).toHaveBeenCalled();
+    });
+  });
+
+  describe('findByPriority', () => {
+    it('debería devolver tareas por prioridad', () => {
+      controller.findByPriority(TaskPriority.HIGH);
+      expect(mockService.findByPriority).toHaveBeenCalledWith(
+        TaskPriority.HIGH,
+      );
     });
   });
 });
