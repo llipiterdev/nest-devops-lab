@@ -30,3 +30,37 @@ jobs:
 
       - name: Análisis estático (ESLint)
         run: npm run lint
+      
+      - name: Compilar
+        run: npm run build
+  
+  sonarqube:
+    name: Análisis SonarQube
+    runs-on: self-hosted
+    needs: build-and-test
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Generar cobertura
+        run: npm run test:cov
+
+      - name: SonarQube scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/usr/src" \
+            -w /usr/src \
+            -e SONAR_TOKEN="${{ secrets.SONAR_TOKEN }}" \
+            sonarsource/sonar-scanner-cli:latest \
+            -Dsonar.host.url=http://host.docker.internal:9000
