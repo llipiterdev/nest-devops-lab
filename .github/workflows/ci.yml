@@ -30,3 +30,6 @@ jobs:
 
       - name: Análisis estático (ESLint)
         run: npm run lint
+      
+      - name: Compilar
+        run: npm run build
