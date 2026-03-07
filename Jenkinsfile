@@ -1,9 +1,8 @@
 pipeline {
-  agent any
+  agent { label 'minikube' }
 
   environment {
-    REGISTRY = 'docker.io'
-    IMAGE_NAME = 'tu-usuario/nest-devops-lab'
+    IMAGE_NAME = 'nest-devops-lab'
     IMAGE_TAG = "${env.BUILD_NUMBER ?: 'latest'}"
   }
 
@@ -14,22 +13,22 @@ pipeline {
       }
     }
 
-    stage('Construir imagen Docker') {
+    stage('Construir imagen Docker en Minikube') {
       steps {
-        sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+        sh '''
+          eval $(minikube docker-env)
+          docker build -t nest-devops-lab:${IMAGE_TAG} .
+          docker tag nest-devops-lab:${IMAGE_TAG} nest-devops-lab:latest
+        '''
       }
     }
 
-    stage('Publicar imagen en registro') {
+    stage('Desplegar en Kubernetes') {
       steps {
-        withCredentials([usernamePassword(
-          credentialsId: 'dockerhub-credentials',
-          usernameVariable: 'DOCKER_USER',
-          passwordVariable: 'DOCKER_PASS'
-        )]) {
-          sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin ${REGISTRY}"
-          sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
-        }
+        sh '''
+          kubectl apply -f k8s/
+          kubectl rollout status deployment/nest-devops-lab --timeout=120s
+        '''
       }
     }
   }
