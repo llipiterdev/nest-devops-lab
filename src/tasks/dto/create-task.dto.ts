@@ -31,4 +31,11 @@ export class CreateTaskDto {
     { message: 'dueDate debe ser una fecha válida en formato ISO 8601' },
   )
   dueDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500, {
+    message: 'La descripción no puede superar 500 caracteres',
+  })
+  description?: string;
 }
