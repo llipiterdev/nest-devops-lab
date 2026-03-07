@@ -1,0 +1,21 @@
+name: CD
+
+on:
+  push:
+    branches: [main, master]
+
+jobs:
+  trigger-jenkins:
+    name: Ejecutar pipeline en Jenkins
+    runs-on: self-hosted
+    steps:
+      - name:   Ejecutar pipeline en Jenkins
+        env:
+          JENKINS_URL: ${{ secrets.JENKINS_URL }}
+          JENKINS_USER: ${{ secrets.JENKINS_USER }}
+          JENKINS_API_TOKEN: ${{ secrets.JENKINS_API_TOKEN }}
+          JOB_NAME: ${{ secrets.JENKINS_JOB_NAME }}
+        run: |
+          curl -sf -X POST \
+            -u "${JENKINS_USER}:${JENKINS_API_TOKEN}" \
+            "${JENKINS_URL}/job/${JOB_NAME}/build"
