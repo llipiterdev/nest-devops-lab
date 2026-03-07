@@ -165,4 +165,47 @@ describe('TasksController (e2e)', () => {
     expect(list).toHaveLength(1);
     expect(list[0].completed).toBe(false);
   });
+
+  it('GET /tasks/stats devuelve total, completed y pending', async () => {
+    const emptyRes = await request(app.getHttpServer())
+      .get('/tasks/stats')
+      .expect(200);
+    expect(emptyRes.body).toEqual({ total: 0, completed: 0, pending: 0 });
+
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Completada', completed: true });
+    await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Pendiente', completed: false });
+
+    const res = await request(app.getHttpServer())
+      .get('/tasks/stats')
+      .expect(200);
+    const stats = res.body as {
+      total: number;
+      completed: number;
+      pending: number;
+    };
+    expect(stats.total).toBe(2);
+    expect(stats.completed).toBe(1);
+    expect(stats.pending).toBe(1);
+  });
+
+  it('POST /tasks acepta description opcional (máx. 500 caracteres)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Con descripción', description: 'Detalle de la tarea' })
+      .expect(201);
+    const created = res.body as Task;
+    expect(created.description).toBe('Detalle de la tarea');
+  });
+
+  it('POST /tasks con description > 500 caracteres devuelve 400', () => {
+    const longDescription = 'a'.repeat(501);
+    return request(app.getHttpServer())
+      .post('/tasks')
+      .send({ title: 'Ok', description: longDescription })
+      .expect(400);
+  });
 });

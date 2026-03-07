@@ -13,6 +13,7 @@ export class TasksService {
     const task: Task = {
       id: randomUUID(),
       title: createTaskDto.title.trim(),
+      description: createTaskDto.description?.trim(),
       completed: createTaskDto.completed ?? false,
       createdAt: new Date(),
       priority: createTaskDto.priority ?? TaskPriority.MEDIUM,
@@ -56,7 +57,19 @@ export class TasksService {
     if (updateTaskDto.dueDate !== undefined) {
       this.tasks[index].dueDate = new Date(updateTaskDto.dueDate);
     }
+    if (updateTaskDto.description !== undefined) {
+      this.tasks[index].description = updateTaskDto.description.trim();
+    }
     return this.tasks[index];
+  }
+
+  getStats(): { total: number; completed: number; pending: number } {
+    const completed = this.tasks.filter((t) => t.completed).length;
+    return {
+      total: this.tasks.length,
+      completed,
+      pending: this.tasks.length - completed,
+    };
   }
 
   remove(id: string): void {
